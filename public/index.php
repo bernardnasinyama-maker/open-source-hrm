@@ -1,4 +1,9 @@
 <?php
+// Fix ngrok browser warning
+if (isset($_SERVER["HTTP_X_FORWARDED_HOST"])) {
+    header("ngrok-skip-browser-warning: true");
+}
+set_time_limit(120);
 
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;

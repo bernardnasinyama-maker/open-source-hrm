@@ -19,6 +19,32 @@ class DepartmentResource extends Resource
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-group';
     protected static string|\UnitEnum|null $navigationGroup = 'Organization';
 
+
+    public static function canViewAny(): bool
+    {
+        return once(fn() => auth()->user()?->hasAnyRole(["super_admin","admin","hr_assistant","viewer"]) ?? false);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin"]) ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin"]) ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin"]) ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin"]) ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return DepartmentForm::configure($schema);

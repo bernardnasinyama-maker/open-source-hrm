@@ -20,17 +20,51 @@ class EmployeeResource extends Resource
     protected static string|\UnitEnum|null $navigationGroup = 'HR Management';
     protected static ?int $navigationSort = 1;
 
+
+    public static function canViewAny(): bool
+    {
+        return once(fn() => auth()->user()?->hasAnyRole(["super_admin","admin","hr_assistant","viewer"]) ?? false);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin","hr_assistant"]) ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin","hr_assistant"]) ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin"]) ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin"]) ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return EmployeeForm::configure($schema);
     }
 
+    
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutRole(["super_admin", "viewer"])
+            ->where("employee_code", "!=", "SYS-001")
+            ->where("employee_code", "!=", "CRBC-VIEW");
+    }
     public static function table(Table $table): Table
     {
         return EmployeeTable::configure($table)
             ->modifyQueryUsing(
                 function (Builder $query) {
-                    $query->role('employee')->withoutRole('admin');
+                    $query->withoutRole(['super_admin'])->where('employee_code','!=','SYS-001');
                 }
             )
         ;

@@ -1,9 +1,10 @@
 <?php
-
 namespace App\Filament\Pages;
 
 use App\Models\Task;
-
+use App\Models\Correspondence;
+use App\Models\SiteExpense;
+use App\Models\Employee;
 use Filament\Schemas\Components\Grid;
 use Filament\Support\Enums\FontWeight;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,207 +12,205 @@ use Relaticle\Flowforge\Board;
 use Relaticle\Flowforge\BoardPage;
 use Relaticle\Flowforge\Column;
 use Filament\Schemas\Schema;
-use Filament\Infolists\Components\{TextEntry};
-use Filament\Forms\Components\{Textarea, Select, DatePicker};
-use App\Models\{Employee};
-
-
+use Filament\Infolists\Components\TextEntry;
+use Filament\Forms\Components\{Textarea, Select, DatePicker, TextInput};
 use Filament\Actions\{EditAction, DeleteAction, CreateAction, ViewAction};
-use Filament\Forms\Components\TextInput;
+use App\Filament\Resources\Correspondences\CorrespondenceResource;
+use App\Filament\Resources\Expenses\SiteExpenseResource;
+use App\Notifications\LeaveStatusNotification;
 
 class TaskBoard extends BoardPage
 {
-    protected static string|null|\BackedEnum $navigationIcon = 'heroicon-o-view-columns';
-    protected static ?string $navigationLabel = 'Task Board';
-    protected static ?string $title = 'Task Board';
-
+    protected static string|null|\BackedEnum $navigationIcon = "heroicon-o-view-columns";
+    protected static ?string $navigationLabel = "Task Board";
+    protected static ?string $title = "Task Board";
     protected static string|\UnitEnum|null $navigationGroup = "Work space";
+    protected static ?int $navigationSort = 1;
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin","hr_assistant"]) ?? false;
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $overdue = Task::where("board_status","!=","completed")
+            ->whereNotNull("due_date")
+            ->where("due_date","<",now())
+            ->count();
+        return $overdue > 0 ? (string)$overdue : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string { return "danger"; }
 
     public function board(Board $board): Board
     {
-        return $board
-            ->searchable(['title', 'description'])
+        $isSuperAdmin = auth()->user()?->hasRole("super_admin");
+        $isAdmin      = auth()->user()?->hasAnyRole(["super_admin","admin"]);
 
-            ->query($this->getEloquentQuery())
-            ->recordTitleAttribute('title')
-            ->columnIdentifier('status')
-            ->positionIdentifier('position')
+        return $board
+            ->searchable(["title","description"])
+            ->query($this->getUnifiedQuery())
+            ->recordTitleAttribute("title")
+            ->columnIdentifier("board_status")
+            ->positionIdentifier("board_position")
+
             ->cardSchema(fn(Schema $schema) => $schema->components([
-                TextEntry::make('email')
-                    ->icon('heroicon-o-user')
-                    ->hiddenLabel()
-                    ->tooltip('Assigned to')
-                ,
-                TextEntry::make('description')
-                    ->hiddenLabel()
-                    ->limit(50, end: ' ...')
-                    ->tooltip('Description'),
-                TextEntry::make('due_date')
-                    ->date()
-                    ->icon('heroicon-o-calendar')
-                    ->hiddenLabel()
-                    ->badge()
-                    ->tooltip('Due date')
+                Grid::make(2)->schema([
+                    TextEntry::make("assignee.first_name")
+                        ->icon("heroicon-o-user")
+                        ->hiddenLabel()
+                        ->default("Unassigned")
+                        ->formatStateUsing(fn($s, $r) => $r?->assignee ? $r->assignee->first_name . " " . $r->assignee->last_name : "Unassigned"),
+                    TextEntry::make("due_date")
+                        ->date("d M Y")
+                        ->icon("heroicon-o-calendar")
+                        ->hiddenLabel()
+                        ->color(fn($record) => $record->due_date && $record->due_date->isPast() && $record->board_status !== "completed" ? "danger" : "gray"),
+                ]),
             ]))
+
             ->cardActions([
                 ViewAction::make()
-                    ->model(Task::class)
-                    ->schema([
-                        TextEntry::make('title')
-                            ->weight(FontWeight::Bold)
-                            ->hiddenLabel()
-                            ->hint('Title')
-                        ,
-                        TextEntry::make('description')
-                            ->hint('Description')
-                            ->hiddenLabel()
-                        ,
-                        Grid::make(2)
-                            ->schema([
-                                TextEntry::make('email')
-                                    ->hiddenLabel()
-                                    ->hint('Assigned to')
-                                    ->icon('heroicon-o-user')
-                                    ->copyable()
-                                ,
-                                TextEntry::make('due_date')
-                                    ->hiddenLabel()
-                                    ->hint('Due date')
-                                    ->icon('heroicon-o-calendar-days')
-                            ])
+                    ->modalHeading(fn($record) => $record->title)
+                    ->modalWidth("lg")
+                    ->infolist(fn($record) => [
+                        TextEntry::make("title")->weight(FontWeight::Bold),
+                        TextEntry::make("description")->markdown()->visible(fn($r) => !empty($r->description)),
+                        Grid::make(3)->schema([
+                            TextEntry::make("assignee.first_name")->label("Assignee")
+                                ->formatStateUsing(fn($s,$r) => $r->assignee ? $r->assignee->first_name." ".$r->assignee->last_name : "Unassigned"),
+                            TextEntry::make("due_date")->label("Due Date")->date("d M Y"),
+                            TextEntry::make("priority")->label("Priority")->badge()
+                                ->color(fn($s) => match($s){"critical"=>"danger","high"=>"warning","medium"=>"info","low"=>"success",default=>"gray"}),
+                        ]),
+                        Grid::make(2)->schema([
+                            TextEntry::make("taskable.ref_number")->label("Reference")->badge()->color("primary")
+                                ->visible(fn($r) => !empty($r->taskable?->ref_number)),
+                            TextEntry::make("taskable.from_party")->label("From Party")
+                                ->visible(fn($r) => $r->taskable_type === Correspondence::class),
+                            TextEntry::make("taskable.subject")->label("Subject")
+                                ->visible(fn($r) => $r->taskable_type === Correspondence::class),
+                            TextEntry::make("taskable.status")->label("Status")->badge()
+                                ->visible(fn($r) => !empty($r->taskable?->status)),
+                            TextEntry::make("taskable.amount")->label("Amount (UGX)")->money("UGX")
+                                ->visible(fn($r) => $r->taskable_type === SiteExpense::class),
+                            TextEntry::make("taskable.category")->label("Category")->badge()
+                                ->visible(fn($r) => $r->taskable_type === SiteExpense::class),
+                        ]),
+                    ]),
 
-                    ])
-                ,
                 EditAction::make()
-                    ->model(Task::class)
+                    ->visible($isAdmin)
+                    ->modalHeading("Edit Task")
                     ->form([
-                        TextInput::make('title')->required(),
-                        Textarea::make('description'),
-                        Grid::make()
-                            ->columns(3)
-                            ->schema([
-                                Select::make('assignee_id')
-                                    ->required()
-                                    // ->afterStateHydrated(function (Select $component, $state) {
-                                    //     if ($record = $component->getRecord()) {
-                                    //         // $assigneeType = $record->assignee_type;
-                                    //         $assigneeId = $record->assignee_id;
-
-                                    //         // if ($assigneeType && $assigneeId) {
-                                    //         //     $prefix = $assigneeType === Employee::class ? 'Employee_' : 'User_';
-                                    //         //     $component->state($prefix . $assigneeId);
-                                    //         // }
-                                    //     }
-                                    // })
-                                    ->label('Assignee')
-                                    ->options(
-                                        collect()
-                                            ->merge(
-                                                Employee::all()->mapWithKeys(
-                                                    fn($employee) => [
-                                                        $employee->id =>
-                                                            $employee->email
-                                                    ],
-                                                ),
-                                            )
-
-                                    )
-                                ,
-                                Select::make('status')
-                                    ->options([
-                                        'todo' => 'Todo',
-                                        'in_progress' => 'In progress',
-                                        'completed' => 'Completed'
-                                    ])
-                                ,
-                                DatePicker::make('due_date')
-                                    ->label('Due Date'),
-                            ])
-                    ])
-                // ->mutateFormDataUsing(function (array $data, array $arguments): array {
-                //     $assigneeId = $data['assignee_id'];
-                //     $assigneeType = null;
-                //     $parsedAssigneeId = null;
-
-                //     // if (str_starts_with($assigneeId, 'Employee_')) {
-                //     //     $parsedAssigneeId = str_replace('Employee_', '', $assigneeId);
-                //     //     $assigneeType = Employee::class;
-                //     // } elseif (str_starts_with($assigneeId, 'User_')) {
-                //     //     $parsedAssigneeId = str_replace('User_', '', $assigneeId);
-                //     //     $assigneeType = Employee::class;
-                //     // }
-
-                //     $data['assignee_id'] = $parsedAssigneeId;
-                //     // $data['assignee_type'] = $assigneeType;
-                //     return $data;
-                // })
-                ,
-                DeleteAction::make()->model(Task::class),
-            ])->cardAction('view')
-            ->columns([
-                Column::make('todo')->label('To Do')->color('gray'),
-                Column::make('in_progress')->label('In Progress')->color('blue'),
-                Column::make('completed')->label('Completed')->color('green'),
+                        TextInput::make("title")->required(),
+                        Textarea::make("description")->rows(3),
+                        Grid::make(2)->schema([
+                            Select::make("assignee_id")->label("Assign To")
+                                ->options(fn() => Employee::whereNotIn("employee_code",["SYS-001","CRBC-VIEW"])
+                                    ->get()->mapWithKeys(fn($e) => [$e->id => $e->first_name." ".$e->last_name]))
+                                ->searchable(),
+                            DatePicker::make("due_date")->label("Due Date"),
+                            Select::make("board_status")->label("Status")->options([
+                                "todo"           => "📋 To Do",
+                                "in_progress"    => "🔄 In Progress",
+                                "pending_review" => "👀 Pending Review",
+                                "completed"      => "✅ Completed",
+                            ]),
+                            Select::make("priority")->options([
+                                "low"      => "🟢 Low",
+                                "medium"   => "🟡 Medium",
+                                "high"     => "🟠 High",
+                                "critical" => "🔴 Critical",
+                            ]),
+                        ]),
+                    ]),
+                DeleteAction::make()->visible($isSuperAdmin),
             ])
+            ->cardAction("view")
+
+            ->columns([
+                Column::make("todo")->label("📋 To Do")->color("gray"),
+                Column::make("in_progress")->label("🔄 In Progress")->color("blue"),
+                Column::make("pending_review")->label("👀 Pending Review")->color("warning"),
+                Column::make("completed")->label("✅ Done")->color("green"),
+            ])
+
             ->columnActions([
                 CreateAction::make()
-                    ->label(' ')
-                    ->iconButton()->icon('heroicon-o-plus')
-                    ->model(Task::class)
+                    ->label(" ")
+                    ->iconButton()
+                    ->icon("heroicon-o-plus")
+                    ->visible($isAdmin)
+                    ->modalHeading("Create Task")
                     ->form([
-                        TextInput::make('title')->required(),
-                        Textarea::make('description'),
-                        Grid::make()
-                            ->columns(2)
-                            ->schema([
-                                Select::make('assignee_id')
-                                    ->label('Assignee')
-                                    ->options(
-
-                                        Employee::all()->mapWithKeys(
-                                            fn($employee) => [
-                                                $employee->id =>
-                                                    $employee->email
-                                            ],
-                                        ),
-                                    )
-
-
-                                    ->searchable()
-                                ,
-                                DatePicker::make('due_date')
-                                    ->label('Due Date'),
-                            ])
+                        Select::make("task_type")->label("Task Type")->live()
+                            ->options([
+                                "task"            => "📋 General Task",
+                                "correspondence"  => "📬 Correspondence Follow-up",
+                                "expense"         => "💰 Expense Approval",
+                            ])->required(),
+                        TextInput::make("title")->required(),
+                        Textarea::make("description")->rows(2),
+                        Grid::make(2)->schema([
+                            Select::make("assignee_id")->label("Assign To")
+                                ->options(fn() => Employee::whereNotIn("employee_code",["SYS-001","CRBC-VIEW"])
+                                    ->get()->mapWithKeys(fn($e) => [$e->id => $e->first_name." ".$e->last_name]))
+                                ->searchable(),
+                            DatePicker::make("due_date"),
+                            Select::make("priority")->options([
+                                "low"=>"🟢 Low","medium"=>"🟡 Medium","high"=>"🟠 High","critical"=>"🔴 Critical"
+                            ])->default("medium"),
+                        ]),
+                        Select::make("source_correspondence_id")->label("Link Correspondence")
+                            ->options(fn() => Correspondence::whereNotIn("status",["closed"])
+                                ->get()->mapWithKeys(fn($c) => [$c->id => "{$c->ref_number} — {$c->subject}"]))
+                            ->searchable()->visible(fn($get) => $get("task_type") === "correspondence"),
+                        Select::make("source_expense_id")->label("Link Expense")
+                            ->options(fn() => SiteExpense::where("status","pending")
+                                ->get()->mapWithKeys(fn($e) => [$e->id => "{$e->ref_number} — {$e->title}"]))
+                            ->searchable()->visible(fn($get) => $get("task_type") === "expense"),
                     ])
                     ->mutateFormDataUsing(function (array $data, array $arguments) {
-                        $status = $arguments['column'];
+                        $status = $arguments["column"] ?? "todo";
+                        $task = new Task();
+                        $task->title          = $data["title"];
+                        $task->description    = $data["description"] ?? null;
+                        $task->assignee_id    = $data["assignee_id"] ?? null;
+                        $task->due_date       = $data["due_date"] ?? null;
+                        $task->priority       = $data["priority"] ?? "medium";
+                        $task->board_status   = $status;
+                        $task->board_position = Task::where("board_status",$status)->max("board_position") + 1;
+                        $task->user_id        = auth()->id();
+                        if (!empty($data["source_correspondence_id"])) {
+                            $task->taskable_type = Correspondence::class;
+                            $task->taskable_id   = $data["source_correspondence_id"];
+                        } elseif (!empty($data["source_expense_id"])) {
+                            $task->taskable_type = SiteExpense::class;
+                            $task->taskable_id   = $data["source_expense_id"];
+                        }
+                        $task->save();
 
-                        // Handle assignee_id parsing (employee_1 or user_1)
-                        $assigneeId = $data['assignee_id'];
-                        $assigneeType = null;
-
-                        // if (str_starts_with($assigneeId, 'Employee_')) {
-                        //     $assigneeId = str_replace('Employee_', '', $assigneeId);
-                        //     $assigneeType = Employee::class;
-                        // } elseif (str_starts_with($assigneeId, 'User_')) {
-                        //     $assigneeId = str_replace('User_', '', $assigneeId);
-                        //     $assigneeType = Employee::class;
-                        // }
-                        $data['assignee_id'] = $assigneeId;
-
-                        $data['status'] = $arguments['column'] ?? $data['status'] ?? null;
-                        $data['position'] = $this->getBoardPositionInColumn($arguments['column']);
-                        return $data;
-                    })
-
-            ])
-        ;
-
-
+                        // Notify assignee
+                        if ($task->assignee_id && $task->assignee) {
+                            try {
+                                $task->assignee->notify(new \App\Notifications\TaskAssignedNotification($task));
+                            } catch (\Exception $e) {}
+                        }
+                        return $task->toArray();
+                    }),
+            ]);
     }
 
-    public function getEloquentQuery(): Builder
+    protected function getUnifiedQuery(): Builder
     {
-        return Task::query()->with('assignee');
+        $user = auth()->user();
+        $query = Task::query()->with(["assignee","taskable"])->orderBy("board_position");
+        // HR assistant only sees tasks assigned to them
+        if ($user?->hasRole("hr_assistant")) {
+            $query->where("assignee_id", $user->id);
+        }
+        return $query;
     }
 }

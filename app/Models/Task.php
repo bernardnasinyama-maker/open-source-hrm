@@ -1,50 +1,36 @@
 <?php
-
 namespace App\Models;
 
-use App\Filament\Pages\TaskBoard;
 use Illuminate\Database\Eloquent\Model;
-use Filament\Notifications\Notification;
-use Filament\Actions\Action;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 class Task extends Model
 {
-    //
-    protected $fillable = [
-        'title',
-        'description',
-        'status',
-        'sort_order',
-        'assignee_id',
+    use SoftDeletes;
 
-        'due_date',
-        'position'
+    protected $table = "tasks";
+
+    protected $fillable = [
+        "title","description","status","sort_order",
+        "assignee_id","due_date","position",
+        "priority","board_status","board_position",
+        "taskable_type","taskable_id","user_id",
     ];
 
     protected $casts = [
-        'title' => 'string',
-        'description' => 'string',
-        'status' => 'string',
-        'sort_order' => 'integer',
-        'assignee_id' => 'integer',
-        'due_date' => 'datetime',
-        'position' => 'integer',
+        "due_date"       => "datetime",
+        "sort_order"     => "integer",
+        "assignee_id"    => "integer",
+        "position"       => "integer",
+        "board_position" => "integer",
     ];
-    protected $table = 'tasks';
-    protected $appends = ['date', 'email'];
 
-    public function assignee()
-    {
-        return $this->belongsTo(Employee::class, 'assignee_id');
-    }
+    protected $appends = ["date","email"];
 
+    public function taskable()  { return $this->morphTo(); }
+    public function assignee()  { return $this->belongsTo(Employee::class, "assignee_id"); }
+    public function creator()   { return $this->belongsTo(Employee::class, "user_id"); }
 
-    public function getDateAttribute()
-    {
-        return $this->due_date?->format('d-M-Y');
-    }
-    public function getEmailAttribute()
-    {
-        return $this->assignee?->email;
-    }
-
+    public function getDateAttribute()  { return $this->due_date?->format("d M Y"); }
+    public function getEmailAttribute() { return $this->assignee?->email; }
 }

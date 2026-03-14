@@ -2,11 +2,25 @@
 
 namespace App\Models;
 
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
+
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class Leave extends Model
 {
+    use LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn(string $eventName) => "Record {$eventName}");
+    }
+
     //
     protected $table = 'leave';
     protected $fillable = [

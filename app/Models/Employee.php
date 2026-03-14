@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
+
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +15,17 @@ use Spatie\Permission\Traits\HasRoles;
 
 class Employee extends Authenticatable
 {
+    use LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn(string $eventName) => "Record {$eventName}");
+    }
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes, HasRoles;
 
@@ -39,6 +53,14 @@ class Employee extends Authenticatable
     protected $appends = [
         'name',
     ];
+
+    public function canAccessPanel(\Filament\Panel $panel): bool
+    {
+        if ($panel->getId() === "admin") {
+            return $this->hasAnyRole(["super_admin", "admin"]);
+        }
+        return true;
+    }
 
     public function getNameAttribute(): string
     {

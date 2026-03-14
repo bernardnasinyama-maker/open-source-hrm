@@ -39,6 +39,32 @@ class MessageResource extends Resource
     //     return $unreadMessages;
     // }
 
+
+    public static function canViewAny(): bool
+    {
+        return once(fn() => auth()->user()?->hasAnyRole(["super_admin","admin","hr_assistant","viewer"]) ?? false);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin","hr_assistant"]) ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin"]) ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin"]) ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin"]) ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return MessageForm::configure($schema);

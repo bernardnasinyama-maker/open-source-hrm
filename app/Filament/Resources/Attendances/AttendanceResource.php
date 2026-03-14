@@ -32,6 +32,32 @@ class AttendanceResource extends Resource
     protected static ?int $navigationSort = 2;
 
 
+
+    public static function canViewAny(): bool
+    {
+        return once(fn() => auth()->user()?->hasAnyRole(["super_admin","admin","hr_assistant","viewer"]) ?? false);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin","hr_assistant"]) ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin","hr_assistant"]) ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin"]) ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin"]) ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return AttendanceForm::configure($schema);

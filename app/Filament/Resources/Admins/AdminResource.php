@@ -24,6 +24,32 @@ class AdminResource extends Resource
     protected static string|\UnitEnum|null $navigationGroup = 'Organization';
     protected static ?int $navigationSort = 2;
 
+
+    public static function canViewAny(): bool
+    {
+        return once(fn() => auth()->user()?->hasAnyRole(["super_admin"]) ?? false);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin"]) ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin"]) ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin"]) ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin"]) ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return AdminForm::configure($schema, )

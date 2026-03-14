@@ -2,7 +2,7 @@
 
 namespace App\Providers\Filament;
 
-use Filament\Pages\Dashboard;
+use App\Filament\Employee\Pages\Dashboard;
 use App\Filament\Pages\TaskBoard;
 
 use Filament\Widgets\AccountWidget;
@@ -18,6 +18,7 @@ use Filament\Support\Colors\Color;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
+use App\Http\Middleware\SetLanguage;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
@@ -30,8 +31,8 @@ class EmployeePanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->id('portal')
-            ->path('portal')
+            ->id('hr')->authGuard('web')
+            ->path('hr')
             ->colors([
                 'primary' => Color::Cyan,
             ])
@@ -41,29 +42,25 @@ class EmployeePanelProvider extends PanelProvider
             ->login()
             ->passwordReset()
             ->profile()
-
-            ->brandName(
-                'Portal',
-            )
-
-
+            ->brandName('CRBC Uganda · HR Portal')
+            ->renderHook('panels::head.end', fn() => '<link rel="stylesheet" href="/css/login-custom.css">')  // or 'CRBC HRM · HR Portal'
+              ->renderHook(
+                  'panels::body.end',
+                  fn() => view('filament.branding-footer')
+             )
             ->discoverResources(in: app_path('Filament/Employee/Resources'), for: 'App\\Filament\\Employee\\Resources')
             ->discoverPages(in: app_path('Filament/Employee/Pages'), for: 'App\\Filament\\Employee\\Pages')
             ->pages([
                 Dashboard::class,
-                TaskBoard::class,
-            ])
-            ->resources([
-                MessageResource::class
             ])
             ->discoverWidgets(in: app_path('Filament/Employee/Widgets'), for: 'App\\Filament\\Employee\\Widgets')
             ->widgets([
-
-                AllCalendarWidget::class
+                // Add any HR-specific widgets here if needed
             ])
-
             ->navigationGroups([
-                'Work space'
+                'HR Management',
+                'Project',
+                'Finance',
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -74,6 +71,7 @@ class EmployeePanelProvider extends PanelProvider
                 VerifyCsrfToken::class,
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
+                SetLanguage::class,
                 DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([

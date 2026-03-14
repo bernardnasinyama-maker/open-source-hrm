@@ -1,0 +1,234 @@
+/* ── Background ─────────────────────────────────────────── */
+.fi-simple-layout {
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%) !important;
+    min-height: 100vh !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* ── Card box ────────────────────────────────────────────── */
+.fi-simple-main {
+    background: rgba(15, 12, 41, 0.85) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(139, 92, 246, 0.3) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.6) !important;
+    width: 100% !important;
+    max-width: 420px !important;
+    padding: 2.5rem !important;
+    margin: 0 auto !important;
+}
+
+/* ── Brand name ──────────────────────────────────────────── */
+.fi-logo {
+    color: #c4b5fd !important;
+    font-size: 1.4rem !important;
+    font-weight: 800 !important;
+    text-align: center !important;
+    display: block !important;
+}
+
+/* ── Heading ─────────────────────────────────────────────── */
+.fi-simple-header {
+    text-align: center !important;
+    margin-bottom: 1.5rem !important;
+}
+.fi-simple-header-heading {
+    color: #e2e8f0 !important;
+    font-size: 1.2rem !important;
+    font-weight: 700 !important;
+}
+.fi-simple-header-subheading {
+    color: rgba(196,181,253,0.6) !important;
+    font-size: 0.85rem !important;
+}
+
+/* ── Labels ──────────────────────────────────────────────── */
+label,
+.fi-fo-field-wrp-label label,
+.fi-label {
+    color: #c4b5fd !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+}
+
+/* ── Inputs ──────────────────────────────────────────────── */
+.fi-input {
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(139,92,246,0.3) !important;
+    color: #f1f5f9 !important;
+    border-radius: 8px !important;
+    width: 100% !important;
+}
+.fi-input:focus {
+    border-color: #8b5cf6 !important;
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.15) !important;
+    outline: none !important;
+}
+.fi-input::placeholder {
+    color: rgba(255,255,255,0.2) !important;
+}
+
+/* ── Input wrapper full width ────────────────────────────── */
+.fi-input-wrp,
+.fi-fo-field-wrp,
+.fi-fo-component-ctn {
+    width: 100% !important;
+}
+
+/* ── Sign in button ──────────────────────────────────────── */
+.fi-btn {
+    background: linear-gradient(135deg, #7c3aed, #4f46e5) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    padding: 0.7rem 1.5rem !important;
+    width: 100% !important;
+    display: block !important;
+    text-align: center !important;
+    box-shadow: 0 4px 15px rgba(124,58,237,0.4) !important;
+    transition: all 0.2s !important;
+    cursor: pointer !important;
+}
+.fi-btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 20px rgba(124,58,237,0.55) !important;
+}
+
+/* ── Links ───────────────────────────────────────────────── */
+a {
+    color: #a78bfa !important;
+}
+
+/* ── Remember me checkbox ────────────────────────────────── */
+.fi-checkbox-label {
+    color: rgba(196,181,253,0.7) !important;
+    font-size: 0.82rem !important;
+}
+
+/* ── Form full width fix ─────────────────────────────────── */
+form, .fi-sc, .fi-sc > * {
+    width: 100% !important;
+}
+/* Force label white */
+.fi-fo-field-wrp-label,
+.fi-fo-field-wrp-label label,
+.fi-fo-field-wrp-label span,
+[class*="fi-"] label,
+[class*="fi-"] .fi-label,
+.fi-simple-main label {
+}
+/* Force button text white and visible */
+.fi-btn,
+.fi-btn span,
+.fi-btn-label,
+button[type="submit"],
+button[type="submit"] span {
+}
+/* Remove any dark backgrounds on inputs */
+.fi-simple-main .fi-input-wrp {
+}
+
+/* All login text white */
+.fi-simple-main label,
+.fi-simple-main span,
+.fi-simple-main p,
+.fi-simple-main .fi-fo-field-wrp-label,
+.fi-simple-main .fi-checkbox-label,
+.fi-simple-main [class*="fi-"] {
+}
+
+
+/* ── Force all login text white ─────────────────────────── */
+.fi-simple-main label,
+.fi-simple-main span,
+.fi-simple-main p,
+.fi-simple-main a,
+.fi-simple-main .fi-fo-field-wrp-label,
+.fi-simple-main .fi-fo-field-wrp-label *,
+.fi-simple-main .fi-checkbox-label,
+.fi-simple-main .fi-fo-field-wrp-hint,
+.fi-simple-main [class*="fi-"] {
+    color: #e2e8f0 !important;
+}
+
+/* Remember me checkbox label */
+.fi-simple-main .fi-checkbox-input + span,
+.fi-simple-main .fi-fo-field-wrp-label label {
+    color: #e2e8f0 !important;
+}
+
+/* Asterisk required star */
+.fi-simple-main .fi-fo-field-wrp-label sup {
+    color: #f87171 !important;
+}
+
+.fi-simple-main .fi-input,
+.fi-simple-main input,
+.fi-simple-main input[type=email],
+.fi-simple-main input[type=password] {
+}
+/* ── Input fields - readable ────────────────────────────── */
+.fi-simple-main .fi-input,
+.fi-simple-main input,
+.fi-simple-main input[type=email],
+.fi-simple-main input[type=password] {
+    color: #1e293b !important;
+    background: #ffffff !important;
+    border: 2px solid #8b5cf6 !important;
+    border-radius: 8px !important;
+}
+.fi-simple-main input:focus {
+    border-color: #6d28d9 !important;
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.2) !important;
+}
+
+.hr-card-danger,
+.hr-card-danger * {
+    color: #fecaca;
+}
+.hr-card-danger .stat-value {
+    color: #f87171;
+}
+.hr-card-danger .stat-label {
+    color: rgba(254,202,202,0.6);
+}
+.hr-card-danger .stat-sub {
+    color: rgba(254,202,202,0.4);
+}
+
+/* ── Fix ALL form inputs across entire system ───────────── */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+textarea,
+select,
+.fi-input,
+.fi-select-input,
+.fi-textarea {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+}
+input::placeholder,
+textarea::placeholder {
+    color: #94a3b8 !important;
+}
+/* Dark mode inputs */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark textarea,
+.dark select,
+.dark .fi-input {
+    color: #f1f5f9 !important;
+    background-color: #1e293b !important;
+}

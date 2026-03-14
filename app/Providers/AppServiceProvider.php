@@ -28,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \App\Models\SiteExpense::observe(\App\Observers\SiteExpenseObserver::class);
+        
         //
         $this->configureCommands();
         $this->configureModels();

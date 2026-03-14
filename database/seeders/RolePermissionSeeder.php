@@ -1,21 +1,12 @@
 <?php
-
 namespace Database\Seeders;
-
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
-
-
-class RolePermissionSeeder extends Seeder
-{
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
-    {
-        //
-        $admin = Role::firstOrCreate(['name' => 'admin']);
-        $employee = Role::firstOrCreate(['name' => 'employee']);
-        $employee = Role::firstOrCreate(['name' => 'guest']);
+class RolePermissionSeeder extends Seeder {
+    public function run(): void {
+        foreach (["super_admin","admin","hr_assistant","viewer","employee"] as $role) {
+            Role::firstOrCreate(["name" => $role, "guard_name" => "web"]);
+        }
+        echo "Roles created: " . Role::count() . PHP_EOL;
     }
 }

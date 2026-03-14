@@ -20,6 +20,32 @@ class PayrollResource extends Resource
     protected static string|\UnitEnum|null $navigationGroup = 'HR Management';
     protected static ?int $navigationSort = 4;
 
+
+    public static function canViewAny(): bool
+    {
+        return once(fn() => auth()->user()?->hasAnyRole(["super_admin","admin"]) ?? false);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin"]) ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin","admin"]) ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin"]) ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(["super_admin"]) ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return PayrollForm::configure($schema);
@@ -40,9 +66,10 @@ class PayrollResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListPayrolls::route('/'),
-            // 'create' => Pages\CreatePayroll::route('/create'),
-            // 'edit' => Pages\EditPayroll::route('/{record}/edit'),
+            'index'  => ListPayrolls::route('/'),
+            'create' => Pages\CreatePayroll::route('/create'),
+            'edit'   => Pages\EditPayroll::route('/{record}/edit'),
+            
         ];
     }
 }
