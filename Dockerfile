@@ -1,6 +1,6 @@
-FROM php:8.3-cli
+FROM php:8.4-cli
 
-# Install system dependencies + intl
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git curl zip unzip libzip-dev libpng-dev libxml2-dev \
     libsqlite3-dev libicu-dev g++ \
@@ -14,7 +14,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-intl
+RUN composer install --no-dev --optimize-autoloader
 
 RUN chmod -R 775 storage bootstrap/cache
 
